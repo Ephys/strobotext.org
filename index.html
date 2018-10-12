@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Strobotext - Ease dyslexia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+  *, *::after, *::before {
+    box-sizing: inherit;
+  }
+
+  body {
+    margin: 0;
+    font-size: 0;
+
+    background: black;
+    color: white;
+
+    box-sizing: border-box;
+  }
+
+  body:not(.invert) {
+    background: white;
+    color: black;
+  }
+
+  .body-wrapper {
+    background: inherit;
+    display: flex;
+    padding: 0 0.75em;
+
+    font-size: 3rem;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 100vh;
+    border: 0;
+    resize:  none;
+    background: transparent;
+
+    font-size: 21rem;
+    font-size: inherit;
+    color: inherit;
+
+    line-height: 1.5;
+
+    padding: 0.5em calc((100vw - 22em) / 2);
+    margin: 0 auto;
+
+    will-change: opacity;
+  }
+
+  textarea::placeholder {
+    color: #dcdcdc;
+  }
+
+  textarea[readonly] {
+    outline: 0;
+  }
+
+  body:not(.invert)  textarea::placeholder {
+    color: black;
+  }
+
+  .controls {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    padding: 20px;
+    justify-content: center;
+  }
+
+  .controls {
+    font-size: 1rem;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  .start-stop-button,
+  .invert-button,
+  .fullscreen-button,
+  .decrease-font-button,
+  .increase-font-button {
+    height: 100px;
+    width: 100px;
+
+    border: none;
+    font-size: 0;
+    background-size: contain;
+    background-color: white;
+    border-radius: 50%;
+
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  @media (max-width: 800px) {
+    .start-stop-button,
+    .invert-button,
+    .fullscreen-button,
+    .decrease-font-button,
+    .increase-font-button {
+      height: 40px;
+      width: 40px;
+    }
+  }
+
+  .start-stop-button {
+    background-image: url('./play.svg');
+  }
+
+  .start-stop-button.is-stop-button {
+    background-image: url('./pause.svg');
+  }
+
+  .invert-button {
+    background-image: url('./invert-colors.svg');
+  }
+
+  .fullscreen-button {
+    background-image: url('./fullscreen-enter.svg');
+  }
+
+  .fullscreen-button.active {
+    background-image: url('./fullscreen-exit.svg');
+  }
+
+  .decrease-font-button {
+    background-image: url('./font-size.svg');
+
+    transform: scaleX(-1);
+  }
+
+  .increase-font-button {
+    background-image: url('./font-size.svg');
+  }
+
+  .controls > *:not(:last-child) {
+    margin-right: 20px;
+  }
+  </style>
+
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css" integrity="sha384-5sAR7xN1Nv6T6+dT2mhtzEpVJvfS3NScPQTrOxhwjIuvcA67KV2R5Jz6kr4abQsz" crossorigin="anonymous">
+</head>
+<body>
+  <div class="body-wrapper">
+    <textarea placeholder="Paste your text" autocorrect="off"></textarea>
+  </div>
+
+  <div class="controls">
+    <button type="button" class="start-stop-button">Start</button>
+    <button type="button" class="invert-button">Invert Colors</button>
+    <button type="button" class="fullscreen-button">Fullscreen</button>
+
+    <button type="button" class="decrease-font-button">Decrease font-size</button>
+    <button type="button" class="increase-font-button">Increase font-size</button>
+  </div>
+
+  <script>
+    const textarea = document.querySelector('textarea');
+    const startStopButton = document.querySelector('.start-stop-button');
+    let flickerInterval;
+
+    startStopButton.addEventListener('click', event => {
+      event.preventDefault();
+
+      const requestedStart = startStopButton.classList.toggle('is-stop-button')
+
+      if (requestedStart) {
+        textarea.setAttribute('readonly', 'readonly');
+
+        flickerInterval = setInterval(() => {
+          if (textarea.style.opacity === '') {
+            textarea.style.opacity = '0';
+          } else {
+            textarea.style.opacity = '';
+          }
+        }, 10);
+
+        startStopButton.textContent = 'stop';
+      } else {
+        textarea.style.opacity = '';
+        clearInterval(flickerInterval);
+
+        startStopButton.textContent = 'start';
+
+        textarea.removeAttribute('readonly');
+      }
+    });
+
+    document.querySelector('.invert-button')
+      .addEventListener('click', e => {
+        document.body.classList.toggle('invert');
+      });
+
+    document.querySelector('.fullscreen-button')
+      .addEventListener('click', e => {
+        document.querySelector('.fullscreen-button').classList.toggle('active');
+
+        if (document.currentFullScreenElement || document.webkitCurrentFullScreenElement) {
+          exitFullscreen();
+          return;
+        }
+
+        requestFullscreen(document.body);
+      });
+
+    function requestFullscreen(elem) {
+      if (elem.requestFullscreen) {
+        return elem.requestFullscreen();
+      }
+
+      if (elem.webkitRequestFullscreen) {
+        return elem.webkitRequestFullscreen();
+      }
+    }
+
+    function exitFullscreen() {
+      if (document.exitFullscreen) {
+        return document.exitFullscreen();
+      }
+
+      if (document.webkitExitFullscreen) {
+        return document.webkitExitFullscreen();
+      }
+    }
+
+    document.querySelector('.increase-font-button').addEventListener('click', e => {
+      const root = document.documentElement;
+
+      let currentFont = Number.parseInt(root.style.fontSize, 10);
+      if (Number.isNaN(currentFont)) {
+        currentFont = 16;
+      }
+
+      root.style.fontSize = `${Math.min(currentFont + 1, 30)}px`;
+    });
+
+    document.querySelector('.decrease-font-button').addEventListener('click', e => {
+      const root = document.documentElement;
+
+      let currentFont = Number.parseInt(root.style.fontSize, 10);
+      if (Number.isNaN(currentFont)) {
+        currentFont = 16;
+      }
+
+      root.style.fontSize = `${Math.max(currentFont - 1, 10)}px`;
+    });
+  </script>
+</body>
+</html>
